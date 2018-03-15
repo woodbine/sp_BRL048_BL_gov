@@ -39,13 +39,19 @@ def validateFilename(filename):
 
 
 def validateURL(url):
+    import time
     try:
-        r = requests.get(url, allow_redirects=True, timeout=20)
+        time.sleep(10)
+        r = requests.get(url)
         count = 1
+        while 202 < r.status_code <= 500:
+            time.sleep(10)
+            r = requests.get(url)
         while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = requests.get(url, allow_redirects=True, timeout=20)
+            time.sleep(10)
+            r = requests.get(url)
         sourceFilename = r.headers.get('Content-Disposition')
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
@@ -93,13 +99,13 @@ data = []
 
 #### READ HTML 1.0
 
-html = urllib2.urlopen(url)
-soup = BeautifulSoup(html, "lxml")
+html = requests.get(url)
+soup = BeautifulSoup(html.text, "lxml")
 
 
 #### SCRAPE DATA
 
-blocks = soup.find('div', attrs={'id': 'maincol'})
+blocks = soup.find('div', attrs={'id': 'pagecontent'})
 title_divs = blocks.find_all('h4')
 for title_div in title_divs:
     title = title_div.text.strip()
@@ -117,6 +123,7 @@ for title_div in title_divs:
                 csvMth = months[:3].strip()
                 csvYr = title.strip()
                 url = 'http://www.bl.uk'+link_url.find('a')['href']
+                csvYr = csvYr.split()[-1]
                 csvMth = convert_mth_strings(csvMth.upper())
                 data.append([csvYr, csvMth, url])
         except:
